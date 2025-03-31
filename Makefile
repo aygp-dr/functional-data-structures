@@ -119,19 +119,7 @@ test: test-scheme test-hy  ## Run all tests
 test-scheme: tangle  ## Run Scheme tests
 	@echo "$(CYAN)Running Scheme tests...$(RESET)"
 	@mkdir -p $(SCHEME_DIR)/okasaki
-	@for file in $(SCHEME_DIR)/*.scm; do \
-		module_name=$$(basename $$file .scm); \
-		echo "Extracting $$module_name module..."; \
-		$(GUILE) -L $(SCHEME_DIR) -c "(use-modules (ice-9 regex)) \
-                  (let* ((content (call-with-input-file \"$$file\" get-string-all)) \
-                         (pattern (make-regexp \"\\(define-module \\(okasaki $$module_name\\)[^)]*\\)([^)]*\\))\" #:extended? #t)) \
-                         (match (string-match pattern content) \
-                           (#f (display \"Module not found\\n\")) \
-                           (m (call-with-output-file \"$(SCHEME_DIR)/okasaki/$$module_name.scm\" \
-                                (lambda (port) (display (match:substring m) port) \
-                                               (newline port) \
-                                               (display (substring content (match:end m)) port))))))"; \
-	done
+	@cp $(SCHEME_DIR)/okasaki/stack.scm $(SCHEME_DIR)/okasaki/stack.scm.bak 2>/dev/null || true
 	@$(GUILE) -L . -e main $(TEST_DIR)/scheme/test-runner.scm || (echo "$(RED)Scheme tests failed$(RESET)"; exit 1)
 	@echo "$(GREEN)Scheme tests passed$(RESET)"
 
@@ -139,11 +127,7 @@ test-hy: tangle  ## Run Hy tests
 	@echo "$(CYAN)Running Hy tests...$(RESET)"
 	@mkdir -p $(HY_DIR)/okasaki
 	@touch $(HY_DIR)/okasaki/__init__.hy
-	@for file in $(HY_DIR)/*.hy; do \
-		module_name=$$(basename $$file .hy); \
-		echo "Extracting $$module_name module..."; \
-		grep -A 1000 "$$module_name.hy" $$file > $(HY_DIR)/okasaki/$$module_name.hy; \
-	done
+	@cp $(HY_DIR)/okasaki/stack.hy $(HY_DIR)/okasaki/stack.hy.bak 2>/dev/null || true
 	@poetry run pytest $(TEST_DIR)/hy || (echo "$(RED)Hy tests failed$(RESET)"; exit 1)
 	@echo "$(GREEN)Hy tests passed$(RESET)"
 
