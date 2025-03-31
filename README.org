@@ -6,8 +6,10 @@
 
 This repository contains implementations of purely functional data structures based on Chris Okasaki's book "Purely Functional Data Structures" and his PhD thesis. The implementations are available in two Lisp dialects:
 
-- *Guile Scheme*: A dialect of Scheme (a Lisp variant) that is part of the GNU project
-- *Hy*: A Lisp dialect embedded in Python
+- *Guile Scheme 3.0+*: A dialect of Scheme (a Lisp variant) that is part of the GNU project
+- *Hy 1.0+*: A Lisp dialect embedded in Python, now with semantic macros and Scheme-inspired design
+
+Hy 1.0 introduces a significant evolution in its design with a cleaner, more consistent semantic model. This makes it particularly well-suited for implementing functional data structures alongside Scheme.
 
 * References
 
@@ -51,18 +53,28 @@ poetry install
 
 ** Running the Code
 
-The source code is maintained in an Org-mode file and can be tangled into separate Scheme and Hy files:
+The source code is maintained in an Org-mode file (Literate Programming) and is "tangled" into separate Scheme and Hy files. The workflow is:
 
 #+begin_src shell
-# Tangle files from the org file
-emacs -Q --batch --eval "(require 'org)" --eval "(org-babel-tangle-file \"okasaki-data-structures.org\")"
+# Tangle org file into Scheme and Hy source code
+make tangle
 
-# Run Scheme implementation
-guile -L . scheme/okasaki.scm
+# Run the implementations
+make run-scheme  # Run Scheme implementation
+make run-hy      # Run Hy implementation
 
-# Run Hy implementation
-poetry run hy hy/okasaki.hy
+# Run tests
+make test
+
+# If you edit source files directly, you can sync changes back to the org file
+make detangle
 #+end_src
+
+We use a bi-directional workflow where you can either:
+1. Edit the =okasaki-data-structures.org= file and run =make tangle= to generate code, or
+2. Edit files in the =scheme/= and =hy/= directories and run =make detangle= to update the org file
+
+The tangled code files are marked as generated and can be cleaned with =make clean=. This approach lets us maintain parity between implementations while documenting concepts in a single place.
 
 * Structure
 

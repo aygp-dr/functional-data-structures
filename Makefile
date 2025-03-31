@@ -34,6 +34,7 @@ help:  ## Show this help message
 	@echo "  $(CYAN)all$(RESET)             Tangle code, run tests, and lint"
 	@echo "  $(CYAN)clean$(RESET)           Remove generated and temporary files"
 	@echo "  $(CYAN)tangle$(RESET)          Tangle source code from org files"
+	@echo "  $(CYAN)detangle$(RESET)        Update org files with changes from source (reverse tangle)"
 	@echo "  $(CYAN)compile-scheme$(RESET)  Compile Scheme files"
 	@echo "  $(CYAN)install$(RESET)         Install Python dependencies"
 	@echo "  $(CYAN)shell$(RESET)           Activate Poetry shell"
@@ -50,10 +51,22 @@ help:  ## Show this help message
 all: tangle test lint  ## Tangle code, run tests, and lint
 
 clean:  ## Remove generated and temporary files
-	@echo "Cleaning generated files..."
-	@rm -rf $(SCHEME_DIR)/**/*.go
+	@echo "$(CYAN)Cleaning generated files...$(RESET)"
+	@if [ -f scheme/.generated ]; then \
+		echo "Removing generated Scheme files..."; \
+		rm -rf $(SCHEME_DIR); \
+	else \
+		echo "Cleaning Scheme compiled files..."; \
+		rm -rf $(SCHEME_DIR)/**/*.go; \
+	fi
+	@if [ -f hy/.generated ]; then \
+		echo "Removing generated Hy files..."; \
+		rm -rf $(HY_DIR); \
+	else \
+		echo "Cleaning Hy cache files..."; \
+		rm -rf $(HY_DIR)/**/__pycache__; \
+	fi
 	@rm -rf __pycache__
-	@rm -rf $(HY_DIR)/**/__pycache__
 	@rm -rf .pytest_cache
 	@rm -rf dist
 	@rm -rf build
@@ -61,16 +74,26 @@ clean:  ## Remove generated and temporary files
 	@find . -name "*~" -delete
 	@find . -name "*.pyc" -delete
 	@find . -name "__pycache__" -delete
-	@echo "Done cleaning"
+	@echo "$(GREEN)Done cleaning$(RESET)"
 
 # Code generation
 tangle:  ## Tangle source code from org files
-	@echo "Tangling Org files..."
+	@echo "$(CYAN)Tangling Org files...$(RESET)"
 	@for file in $(ORG_FILES); do \
 		echo "Tangling $$file..."; \
 		$(EMACS) --eval "(require 'org)" --eval "(org-babel-tangle-file \"$$file\")"; \
 	done
-	@echo "Done tangling"
+	@echo "$(GREEN)Done tangling files to scheme/ and hy/ (marked as generated)$(RESET)"
+	@touch scheme/.generated
+	@touch hy/.generated
+
+detangle:  ## Update org files from source code (reverse of tangle)
+	@echo "$(CYAN)Detangling source files...$(RESET)"
+	@for file in $(ORG_FILES); do \
+		echo "Processing $$file..."; \
+		$(EMACS) --eval "(require 'org)" --eval "(org-babel-detangle \"$$file\")"; \
+	done
+	@echo "$(GREEN)Done detangling$(RESET)"
 
 # Build targets
 compile-scheme: tangle  ## Compile Scheme files
@@ -94,14 +117,35 @@ shell:  ## Activate Poetry shell
 test: test-scheme test-hy  ## Run all tests
 
 test-scheme: tangle  ## Run Scheme tests
-	@echo "Running Scheme tests..."
-	@$(GUILE) -L . -e main $(TEST_DIR)/scheme/test-runner.scm || (echo "Scheme tests failed"; exit 1)
-	@echo "Scheme tests passed"
+	@echo "$(CYAN)Running Scheme tests...$(RESET)"
+	@mkdir -p $(SCHEME_DIR)/okasaki
+	@for file in $(SCHEME_DIR)/*.scm; do \
+		module_name=$$(basename $$file .scm); \
+		echo "Extracting $$module_name module..."; \
+		$(GUILE) -L $(SCHEME_DIR) -c "(use-modules (ice-9 regex)) \
+                  (let* ((content (call-with-input-file \"$$file\" get-string-all)) \
+                         (pattern (make-regexp \"\\(define-module \\(okasaki $$module_name\\)[^)]*\\)([^)]*\\))\" #:extended? #t)) \
+                         (match (string-match pattern content) \
+                           (#f (display \"Module not found\\n\")) \
+                           (m (call-with-output-file \"$(SCHEME_DIR)/okasaki/$$module_name.scm\" \
+                                (lambda (port) (display (match:substring m) port) \
+                                               (newline port) \
+                                               (display (substring content (match:end m)) port))))))"; \
+	done
+	@$(GUILE) -L . -e main $(TEST_DIR)/scheme/test-runner.scm || (echo "$(RED)Scheme tests failed$(RESET)"; exit 1)
+	@echo "$(GREEN)Scheme tests passed$(RESET)"
 
 test-hy: tangle  ## Run Hy tests
-	@echo "Running Hy tests..."
-	@poetry run pytest $(TEST_DIR)/hy || (echo "Hy tests failed"; exit 1)
-	@echo "Hy tests passed"
+	@echo "$(CYAN)Running Hy tests...$(RESET)"
+	@mkdir -p $(HY_DIR)/okasaki
+	@touch $(HY_DIR)/okasaki/__init__.hy
+	@for file in $(HY_DIR)/*.hy; do \
+		module_name=$$(basename $$file .hy); \
+		echo "Extracting $$module_name module..."; \
+		grep -A 1000 "$$module_name.hy" $$file > $(HY_DIR)/okasaki/$$module_name.hy; \
+	done
+	@poetry run pytest $(TEST_DIR)/hy || (echo "$(RED)Hy tests failed$(RESET)"; exit 1)
+	@echo "$(GREEN)Hy tests passed$(RESET)"
 
 # Lint and format
 lint: lint-scheme lint-hy  ## Run linters for both Scheme and Hy
