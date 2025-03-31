@@ -118,17 +118,12 @@ test: test-scheme test-hy  ## Run all tests
 
 test-scheme: tangle  ## Run Scheme tests
 	@echo "$(CYAN)Running Scheme tests...$(RESET)"
-	@mkdir -p $(SCHEME_DIR)/okasaki
-	@cp $(SCHEME_DIR)/okasaki/stack.scm $(SCHEME_DIR)/okasaki/stack.scm.bak 2>/dev/null || true
 	@$(GUILE) -L . -e main $(TEST_DIR)/scheme/test-runner.scm || (echo "$(RED)Scheme tests failed$(RESET)"; exit 1)
 	@echo "$(GREEN)Scheme tests passed$(RESET)"
 
 test-hy: tangle  ## Run Hy tests
 	@echo "$(CYAN)Running Hy tests...$(RESET)"
-	@mkdir -p $(HY_DIR)/okasaki
-	@touch $(HY_DIR)/okasaki/__init__.hy
-	@cp $(HY_DIR)/okasaki/stack.hy $(HY_DIR)/okasaki/stack.hy.bak 2>/dev/null || true
-	@poetry run pytest $(TEST_DIR)/hy || (echo "$(RED)Hy tests failed$(RESET)"; exit 1)
+	@PYTHONPATH="$$PYTHONPATH:$$(pwd)" poetry run pytest $(TEST_DIR)/hy || (echo "$(RED)Hy tests failed$(RESET)"; exit 1)
 	@echo "$(GREEN)Hy tests passed$(RESET)"
 
 # Lint and format
