@@ -1,0 +1,851 @@
+#+TITLE: Purely Functional Data Structures Implementation
+#+AUTHOR: Based on Chris Okasaki's book
+#+OPTIONS: toc:3 num:t
+#+PROPERTY: header-args:scheme :tangle "./scheme/okasaki.scm" :mkdirp t
+#+PROPERTY: header-args:hy :tangle "./hy/okasaki.hy" :mkdirp t
+
+* Introduction
+
+This document implements key data structures from Chris Okasaki's "Purely Functional Data Structures" in both Guile Scheme and Hy. The implementations follow the purely functional paradigm, ensuring that operations don't modify existing structures but create new ones instead.
+
+* Persistent Lists
+
+The simplest functional data structure is the linked list. Both Scheme and Hy have built-in support for lists, but we'll implement our own version to understand the principles.
+
+** List Implementation in Scheme
+
+#+begin_src scheme
+;; list.scm - Persistent List implementation
+
+(define-module (okasaki list)
+  #:export (empty? cons-list head tail))
+
+;; Basic list operations
+(define empty? null?)
+(define cons-list cons)
+(define head car)
+(define tail cdr)
+
+;; Example usage
+(define example-list (cons-list 1 (cons-list 2 (cons-list 3 '()))))
+(display "List: ")
+(display example-list)
+(newline)
+(display "Head: ")
+(display (head example-list))
+(newline)
+(display "Tail: ")
+(display (tail example-list))
+(newline)
+(display "Is empty? ")
+(display (empty? example-list))
+(newline)
+#+end_src
+
+** List Implementation in Hy
+
+#+begin_src hy
+;; list.hy - Persistent List implementation
+
+(defn empty? [lst]
+  "Check if a list is empty"
+  (= lst []))
+
+(defn cons-list [x lst]
+  "Construct a new list with x as head and lst as tail"
+  (+ [x] lst))
+
+(defn head [lst]
+  "Get the first element of a list"
+  (get lst 0))
+
+(defn tail [lst]
+  "Get all elements of a list except the first"
+  (cut lst 1 None))
+
+;; Example usage
+(setv example-list (cons-list 1 (cons-list 2 (cons-list 3 []))))
+(print f"List: {example-list}")
+(print f"Head: {(head example-list)}")
+(print f"Tail: {(tail example-list)}")
+(print f"Is empty? {(empty? example-list)}")
+#+end_src
+
+** List Visualization
+
+#+begin_src mermaid
+graph LR
+    A[List Node] --> B[1]
+    A --> C[Next]
+    C --> D[List Node]
+    D --> E[2]
+    D --> F[Next]
+    F --> G[List Node]
+    G --> H[3]
+    G --> I[Next]
+    I --> J[Empty]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style D fill:#f9f,stroke:#333,stroke-width:2px
+    style G fill:#f9f,stroke:#333,stroke-width:2px
+    style J fill:#ddd,stroke:#333,stroke-width:2px
+#+end_src
+
+* Stack Data Structure
+
+A stack is a Last-In-First-Out (LIFO) data structure with operations push and pop.
+
+** Stack Implementation in Scheme
+
+#+begin_src scheme
+;; stack.scm - Persistent Stack implementation
+
+(define-module (okasaki stack)
+  #:export (empty-stack empty-stack? push pop top))
+
+;; Stack is implemented as a list
+(define empty-stack '())
+
+(define (empty-stack? stack)
+  (null? stack))
+
+(define (push item stack)
+  (cons item stack))
+
+(define (top stack)
+  (if (empty-stack? stack)
+      (error "Cannot get top of empty stack")
+      (car stack)))
+
+(define (pop stack)
+  (if (empty-stack? stack)
+      (error "Cannot pop empty stack")
+      (cdr stack)))
+
+;; Example usage
+(display "\nStack Operations:\n")
+(define my-stack empty-stack)
+(set! my-stack (push 3 my-stack))
+(set! my-stack (push 2 my-stack))
+(set! my-stack (push 1 my-stack))
+(display "Stack: ")
+(display my-stack)
+(newline)
+(display "Top: ")
+(display (top my-stack))
+(newline)
+(display "After pop: ")
+(display (pop my-stack))
+(newline)
+#+end_src
+
+** Stack Implementation in Hy
+
+#+begin_src hy
+;; stack.hy - Persistent Stack implementation
+
+(setv empty-stack [])
+
+(defn empty-stack? [stack]
+  (= (len stack) 0))
+
+(defn push [item stack]
+  (+ [item] stack))
+
+(defn top [stack]
+  (if (empty-stack? stack)
+      (raise (Exception "Cannot get top of empty stack"))
+      (get stack 0)))
+
+(defn pop [stack]
+  (if (empty-stack? stack)
+      (raise (Exception "Cannot pop empty stack"))
+      (cut stack 1 None)))
+
+;; Example usage
+(print "\nStack Operations:")
+(setv my-stack empty-stack)
+(setv my-stack (push 3 my-stack))
+(setv my-stack (push 2 my-stack))
+(setv my-stack (push 1 my-stack))
+(print f"Stack: {my-stack}")
+(print f"Top: {(top my-stack)}")
+(print f"After pop: {(pop my-stack)}")
+#+end_src
+
+** Stack Visualization
+
+#+begin_src mermaid
+graph TD
+    A[Push] --> B[1]
+    A --> C[Push]
+    C --> D[2]
+    C --> E[Push]
+    E --> F[3]
+    E --> G[Empty Stack]
+    
+    H[Pop] -.-> I[2]
+    H -.-> J[3]
+    H -.-> G
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#f9f,stroke:#333,stroke-width:2px
+    style E fill:#f9f,stroke:#333,stroke-width:2px
+    style G fill:#ddd,stroke:#333,stroke-width:2px
+    style H fill:#bbf,stroke:#333,stroke-width:2px
+#+end_src
+
+* Queue Data Structure
+
+A Queue is a First-In-First-Out (FIFO) data structure. Okasaki presents an elegant purely functional implementation using two lists.
+
+** Queue Implementation in Scheme
+
+#+begin_src scheme
+;; queue.scm - Persistent Queue implementation using two lists
+
+(define-module (okasaki queue)
+  #:export (empty-queue empty-queue? enqueue dequeue front))
+
+;; Queue is represented as a pair of lists (front-list . rear-list)
+;; Items are enqueued to the rear list and dequeued from the front list
+;; When front list is empty, the rear list is reversed and becomes the new front list
+
+(define empty-queue (cons '() '()))
+
+(define (empty-queue? queue)
+  (and (null? (car queue)) (null? (cdr queue))))
+
+(define (check-queue queue)
+  (if (null? (car queue))
+      (if (null? (cdr queue))
+          empty-queue
+          (cons (reverse (cdr queue)) '()))
+      queue))
+
+(define (enqueue item queue)
+  (check-queue (cons (car queue) (cons item (cdr queue)))))
+
+(define (front queue)
+  (if (empty-queue? queue)
+      (error "Cannot get front of empty queue")
+      (car (car queue))))
+
+(define (dequeue queue)
+  (if (empty-queue? queue)
+      (error "Cannot dequeue empty queue")
+      (check-queue (cons (cdr (car queue)) (cdr queue)))))
+
+;; Example usage
+(display "\nQueue Operations:\n")
+(define my-queue empty-queue)
+(set! my-queue (enqueue 1 my-queue))
+(set! my-queue (enqueue 2 my-queue))
+(set! my-queue (enqueue 3 my-queue))
+(display "Queue: ")
+(display my-queue)
+(newline)
+(display "Front: ")
+(display (front my-queue))
+(newline)
+(display "After dequeue: ")
+(set! my-queue (dequeue my-queue))
+(display my-queue)
+(newline)
+(display "New front: ")
+(display (front my-queue))
+(newline)
+#+end_src
+
+** Queue Implementation in Hy
+
+#+begin_src hy
+;; queue.hy - Persistent Queue implementation using two lists
+
+(setv empty-queue [[] []])
+
+(defn empty-queue? [queue]
+  (and (= (len (get queue 0)) 0) 
+       (= (len (get queue 1)) 0)))
+
+(defn check-queue [queue]
+  (if (= (len (get queue 0)) 0)
+      (if (= (len (get queue 1)) 0)
+          empty-queue
+          [(list (reversed (get queue 1))) []])
+      queue))
+
+(defn enqueue [item queue]
+  (check-queue [(get queue 0) (+ (get queue 1) [item])]))
+
+(defn front [queue]
+  (if (empty-queue? queue)
+      (raise (Exception "Cannot get front of empty queue"))
+      (get (get queue 0) 0)))
+
+(defn dequeue [queue]
+  (if (empty-queue? queue)
+      (raise (Exception "Cannot dequeue empty queue"))
+      (check-queue [(list (cut (get queue 0) 1 None)) (get queue 1)])))
+
+;; Example usage
+(print "\nQueue Operations:")
+(setv my-queue empty-queue)
+(setv my-queue (enqueue 1 my-queue))
+(setv my-queue (enqueue 2 my-queue))
+(setv my-queue (enqueue 3 my-queue))
+(print f"Queue: {my-queue}")
+(print f"Front: {(front my-queue)}")
+(setv my-queue (dequeue my-queue))
+(print f"After dequeue: {my-queue}")
+(print f"New front: {(front my-queue)}")
+#+end_src
+
+** Queue Visualization
+
+#+begin_src mermaid
+graph LR
+    subgraph Queue
+        subgraph "Front List"
+            F1[1] --> F2[2] --> F3[3]
+        end
+        subgraph "Rear List (reversed on need)"
+            R3[6] --> R2[5] --> R1[4]
+        end
+    end
+    
+    A[Enqueue] --> B[Add to Rear]
+    C[Dequeue] --> D[Remove from Front]
+    E[When Front Empty] --> G[Reverse Rear]
+    G --> H[Make it new Front]
+    
+    style F1 fill:#f9f,stroke:#333,stroke-width:2px
+    style F2 fill:#f9f,stroke:#333,stroke-width:2px
+    style F3 fill:#f9f,stroke:#333,stroke-width:2px
+    style R1 fill:#bbf,stroke:#333,stroke-width:2px
+    style R2 fill:#bbf,stroke:#333,stroke-width:2px
+    style R3 fill:#bbf,stroke:#333,stroke-width:2px
+#+end_src
+
+* Binomial Heap
+
+One of the more complex structures in Okasaki's book is the binomial heap, which provides efficient insertion and merging operations.
+
+** Binomial Heap in Scheme
+
+#+begin_src scheme
+;; binomial-heap.scm - Persistent Binomial Heap implementation
+
+(define-module (okasaki binomial-heap)
+  #:export (empty-heap empty-heap? insert find-min delete-min merge))
+
+;; A binomial tree is represented as (rank value children)
+;; A binomial heap is a list of binomial trees ordered by increasing rank
+
+(define empty-heap '())
+
+(define (empty-heap? heap)
+  (null? heap))
+
+(define (rank tree)
+  (car tree))
+
+(define (root-value tree)
+  (cadr tree))
+
+(define (children tree)
+  (caddr tree))
+
+(define (make-tree rank value children)
+  (list rank value children))
+
+(define (link t1 t2)
+  (if (< (root-value t1) (root-value t2))
+      (make-tree (+ (rank t1) 1) 
+                 (root-value t1) 
+                 (cons t2 (children t1)))
+      (make-tree (+ (rank t2) 1) 
+                 (root-value t2) 
+                 (cons t1 (children t2)))))
+
+(define (insert-tree tree heap)
+  (if (null? heap)
+      (list tree)
+      (let ((t (car heap)) (ts (cdr heap)))
+        (if (< (rank tree) (rank t))
+            (cons tree heap)
+            (insert-tree (link tree t) ts)))))
+
+(define (insert x heap)
+  (insert-tree (make-tree 0 x '()) heap))
+
+(define (merge heap1 heap2)
+  (cond ((null? heap1) heap2)
+        ((null? heap2) heap1)
+        (else
+         (let ((t1 (car heap1)) (ts1 (cdr heap1))
+               (t2 (car heap2)) (ts2 (cdr heap2)))
+           (cond ((< (rank t1) (rank t2))
+                  (cons t1 (merge ts1 heap2)))
+                 ((< (rank t2) (rank t1))
+                  (cons t2 (merge heap1 ts2)))
+                 (else
+                  (insert-tree (link t1 t2) (merge ts1 ts2))))))))
+
+(define (find-min-tree heap)
+  (if (null? (cdr heap))
+      (car heap)
+      (let ((t (car heap))
+            (t' (find-min-tree (cdr heap))))
+        (if (< (root-value t) (root-value t'))
+            t
+            t'))))
+
+(define (find-min heap)
+  (if (empty-heap? heap)
+      (error "Cannot find min of empty heap")
+      (root-value (find-min-tree heap))))
+
+(define (remove-min-tree heap)
+  (if (null? (cdr heap))
+      (list (car heap) '())
+      (let* ((rest-result (remove-min-tree (cdr heap)))
+             (t' (car rest-result))
+             (ts' (cadr rest-result))
+             (t (car heap)))
+        (if (< (root-value t) (root-value t'))
+            (list t (cdr heap))
+            (list t' (cons t ts'))))))
+
+(define (delete-min heap)
+  (if (empty-heap? heap)
+      (error "Cannot delete min from empty heap")
+      (let* ((result (remove-min-tree heap))
+             (min-tree (car result))
+             (rest-heap (cadr result))
+             (rev-children (reverse (children min-tree))))
+        (merge rev-children rest-heap))))
+
+;; Example usage
+(display "\nBinomial Heap Operations:\n")
+(define my-heap empty-heap)
+(set! my-heap (insert 5 my-heap))
+(set! my-heap (insert 3 my-heap))
+(set! my-heap (insert 7 my-heap))
+(set! my-heap (insert 1 my-heap))
+(display "Min value: ")
+(display (find-min my-heap))
+(newline)
+(set! my-heap (delete-min my-heap))
+(display "After delete-min, new min: ")
+(display (find-min my-heap))
+(newline)
+#+end_src
+
+** Binomial Heap in Hy
+
+#+begin_src hy
+;; binomial-heap.hy - Persistent Binomial Heap implementation
+
+(setv empty-heap [])
+
+(defn empty-heap? [heap]
+  (= (len heap) 0))
+
+(defn rank [tree]
+  (get tree 0))
+
+(defn root-value [tree]
+  (get tree 1))
+
+(defn children [tree]
+  (get tree 2))
+
+(defn make-tree [rank value children]
+  [rank value children])
+
+(defn link [t1 t2]
+  (if (< (root-value t1) (root-value t2))
+      (make-tree (+ (rank t1) 1) 
+                 (root-value t1) 
+                 (+ [t2] (children t1)))
+      (make-tree (+ (rank t2) 1) 
+                 (root-value t2) 
+                 (+ [t1] (children t2)))))
+
+(defn insert-tree [tree heap]
+  (if (empty-heap? heap)
+      [tree]
+      (let [t (get heap 0)
+            ts (cut heap 1 None)]
+        (if (< (rank tree) (rank t))
+            (+ [tree] heap)
+            (insert-tree (link tree t) ts)))))
+
+(defn insert [x heap]
+  (insert-tree (make-tree 0 x []) heap))
+
+(defn merge [heap1 heap2]
+  (cond 
+    [(empty-heap? heap1) heap2]
+    [(empty-heap? heap2) heap1]
+    [True
+     (let [t1 (get heap1 0)
+           ts1 (cut heap1 1 None)
+           t2 (get heap2 0)
+           ts2 (cut heap2 1 None)]
+       (cond
+         [(< (rank t1) (rank t2))
+          (+ [t1] (merge ts1 heap2))]
+         [(< (rank t2) (rank t1))
+          (+ [t2] (merge heap1 ts2))]
+         [True
+          (insert-tree (link t1 t2) (merge ts1 ts2))]))]))
+
+(defn find-min-tree [heap]
+  (if (= (len heap) 1)
+      (get heap 0)
+      (let [t (get heap 0)
+            t' (find-min-tree (cut heap 1 None))]
+        (if (< (root-value t) (root-value t'))
+            t
+            t'))))
+
+(defn find-min [heap]
+  (if (empty-heap? heap)
+      (raise (Exception "Cannot find min of empty heap"))
+      (root-value (find-min-tree heap))))
+
+(defn remove-min-tree [heap]
+  (if (= (len heap) 1)
+      [(get heap 0) []]
+      (let [rest-result (remove-min-tree (cut heap 1 None))
+            t' (get rest-result 0)
+            ts' (get rest-result 1)
+            t (get heap 0)]
+        (if (< (root-value t) (root-value t'))
+            [t (cut heap 1 None)]
+            [t' (+ [t] ts')]))))
+
+(defn delete-min [heap]
+  (if (empty-heap? heap)
+      (raise (Exception "Cannot delete min from empty heap"))
+      (let [result (remove-min-tree heap)
+            min-tree (get result 0)
+            rest-heap (get result 1)
+            rev-children (list (reversed (children min-tree)))]
+        (merge rev-children rest-heap))))
+
+;; Example usage
+(print "\nBinomial Heap Operations:")
+(setv my-heap empty-heap)
+(setv my-heap (insert 5 my-heap))
+(setv my-heap (insert 3 my-heap))
+(setv my-heap (insert 7 my-heap))
+(setv my-heap (insert 1 my-heap))
+(print f"Min value: {(find-min my-heap)}")
+(setv my-heap (delete-min my-heap))
+(print f"After delete-min, new min: {(find-min my-heap)}")
+#+end_src
+
+** Binomial Heap Visualization
+
+#+begin_src mermaid
+graph TD
+    subgraph "Binomial Heap"
+        subgraph "Tree of Rank 0"
+            T0[1]
+        end
+        
+        subgraph "Tree of Rank 2"
+            T2[3]
+            T2 --> T21[5]
+            T2 --> T22[7]
+            T21 --> T211[9]
+        end
+    end
+    
+    A[Insert] --> B[Create Rank 0 Tree]
+    C[Link Trees] --> D[Merge Same Rank]
+    E[Find Min] --> F[Traverse Roots]
+    G[Delete Min] --> H[Remove Min Tree]
+    H --> I[Promote Children]
+    I --> J[Merge Back]
+    
+    style T0 fill:#f9f,stroke:#333,stroke-width:2px
+    style T2 fill:#f9f,stroke:#333,stroke-width:2px
+    style T21 fill:#bbf,stroke:#333,stroke-width:2px
+    style T22 fill:#bbf,stroke:#333,stroke-width:2px
+    style T211 fill:#ddf,stroke:#333,stroke-width:2px
+#+end_src
+
+* Red-Black Trees
+
+Red-black trees are balanced binary search trees with good worst-case performance guarantees.
+
+** Red-Black Tree in Scheme
+
+#+begin_src scheme
+;; red-black-tree.scm - Persistent Red-Black Tree implementation
+
+(define-module (okasaki red-black-tree)
+  #:export (empty-tree empty-tree? member? insert))
+
+;; Red-Black tree represented as:
+;; Empty: 'E
+;; Node: (color value left-tree right-tree)
+;; where color is 'R (red) or 'B (black)
+
+(define empty-tree 'E)
+
+(define (empty-tree? tree)
+  (eq? tree 'E))
+
+(define (make-red value left right)
+  (list 'R value left right))
+
+(define (make-black value left right)
+  (list 'B value left right))
+
+(define (color tree)
+  (if (empty-tree? tree)
+      'B  ; Empty trees are considered black
+      (car tree)))
+
+(define (value tree)
+  (cadr tree))
+
+(define (left tree)
+  (caddr tree))
+
+(define (right tree)
+  (cadddr tree))
+
+(define (red? tree)
+  (and (not (empty-tree? tree))
+       (eq? (color tree) 'R)))
+
+(define (black? tree)
+  (or (empty-tree? tree)
+      (eq? (color tree) 'B)))
+
+(define (balance-left color val left-tree right-tree)
+  (cond
+    ;; Case 1: Black node with red-red left grandchild
+    ((and (eq? color 'B)
+          (not (empty-tree? left-tree))
+          (red? left-tree)
+          (not (empty-tree? (left left-tree)))
+          (red? (left left-tree)))
+     (make-red (value left-tree)
+               (make-black (value (left left-tree))
+                          (left (left left-tree))
+                          (right (left left-tree)))
+               (make-black val (right left-tree) right-tree)))
+    
+    ;; Case 2: Black node with red-red right grandchild of left child
+    ((and (eq? color 'B)
+          (not (empty-tree? left-tree))
+          (red? left-tree)
+          (not (empty-tree? (right left-tree)))
+          (red? (right left-tree)))
+     (make-red (value (right left-tree))
+               (make-black (value left-tree)
+                          (left left-tree)
+                          (left (right left-tree)))
+               (make-black val
+                          (right (right left-tree))
+                          right-tree)))
+    
+    ;; Default: no restructuring needed
+    (else
+     (list color val left-tree right-tree))))
+
+(define (balance-right color val left-tree right-tree)
+  (cond
+    ;; Case 3: Black node with red-red left grandchild of right child
+    ((and (eq? color 'B)
+          (not (empty-tree? right-tree))
+          (red? right-tree)
+          (not (empty-tree? (left right-tree)))
+          (red? (left right-tree)))
+     (make-red (value (left right-tree))
+               (make-black val
+                          left-tree
+                          (left (left right-tree)))
+               (make-black (value right-tree)
+                          (right (left right-tree))
+                          (right right-tree))))
+    
+    ;; Case 4: Black node with red-red right grandchild
+    ((and (eq? color 'B)
+          (not (empty-tree? right-tree))
+          (red? right-tree)
+          (not (empty-tree? (right right-tree)))
+          (red? (right right-tree)))
+     (make-red (value right-tree)
+               (make-black val
+                          left-tree
+                          (left right-tree))
+               (make-black (value (right right-tree))
+                          (left (right right-tree))
+                          (right (right right-tree)))))
+    
+    ;; Default: no restructuring needed
+    (else
+     (list color val left-tree right-tree))))
+
+(define (member? x tree)
+  (cond
+    ((empty-tree? tree) #f)
+    ((< x (value tree)) (member? x (left tree)))
+    ((> x (value tree)) (member? x (right tree)))
+    (else #t)))
+
+(define (insert-helper x tree)
+  (cond
+    ((empty-tree? tree) (make-red x empty-tree empty-tree))
+    ((< x (value tree))
+     (balance-left (color tree)
+                  (value tree)
+                  (insert-helper x (left tree))
+                  (right tree)))
+    ((> x (value tree))
+     (balance-right (color tree)
+                   (value tree)
+                   (left tree)
+                   (insert-helper x (right tree))))
+    (else tree)))  ; Value already exists, return unchanged
+
+(define (insert x tree)
+  (let ((result (insert-helper x tree)))
+    (make-black (value result) (left result) (right result))))
+
+;; Example usage
+(display "\nRed-Black Tree Operations:\n")
+(define my-tree empty-tree)
+(set! my-tree (insert 5 my-tree))
+(set! my-tree (insert 3 my-tree))
+(set! my-tree (insert 7 my-tree))
+(set! my-tree (insert 1 my-tree))
+(set! my-tree (insert 9 my-tree))
+(display "Contains 3? ")
+(display (member? 3 my-tree))
+(newline)
+(display "Contains 4? ")
+(display (member? 4 my-tree))
+(newline)
+#+end_src
+
+** Red-Black Tree in Hy
+
+#+begin_src hy
+;; red-black-tree.hy - Persistent Red-Black Tree implementation
+
+(setv EMPTY 'E)
+
+(defn empty-tree? [tree]
+  (= tree EMPTY))
+
+(defn make-red [value left right]
+  ['R value left right])
+
+(defn make-black [value left right]
+  ['B value left right])
+
+(defn color [tree]
+  (if (empty-tree? tree)
+      'B  ; Empty trees are considered black
+      (get tree 0)))
+
+(defn value [tree]
+  (get tree 1))
+
+(defn left [tree]
+  (get tree 2))
+
+(defn right [tree]
+  (get tree 3))
+
+(defn red? [tree]
+  (and (not (empty-tree? tree))
+       (= (color tree) 'R)))
+
+(defn black? [tree]
+  (or (empty-tree? tree)
+      (= (color tree) 'B)))
+
+(defn balance-left [color val left-tree right-tree]
+  (cond
+    ;; Case 1: Black node with red-red left grandchild
+    [(and (= color 'B)
+          (not (empty-tree? left-tree))
+          (red? left-tree)
+          (not (empty-tree? (left left-tree)))
+          (red? (left left-tree)))
+     (make-red (value left-tree)
+               (make-black (value (left left-tree))
+                          (left (left left-tree))
+                          (right (left left-tree)))
+               (make-black val (right left-tree) right-tree))]
+    
+    ;; Case 2: Black node with red-red right grandchild of left child
+    [(and (= color 'B)
+          (not (empty-tree? left-tree))
+          (red? left-tree)
+          (not (empty-tree? (right left-tree)))
+          (red? (right left-tree)))
+     (make-red (value (right left-tree))
+               (make-black (value left-tree)
+                          (left left-tree)
+                          (left (right left-tree)))
+               (make-black val
+                          (right (right left-tree))
+                          right-tree))]
+    
+    ;; Default: no restructuring needed
+    [True
+     [color val left-tree right-tree]]))
+
+(defn balance-right [color val left-tree right-tree]
+  (cond
+    ;; Case 3: Black node with red-red left grandchild of right child
+    [(and (= color 'B)
+          (not (empty-tree? right-tree))
+          (red? right-tree)
+          (not (empty-tree? (left right-tree)))
+          (red? (left right-tree)))
+     (make-red (value (left right-tree))
+               (make-black val
+                          left-tree
+                          (left (left right-tree)))
+               (make-black (value right-tree)
+                          (right (left right-tree))
+                          (right right-tree)))]
+    
+    ;; Case 4: Black node with red-red right grandchild
+    [(and (= color 'B)
+          (not (empty-tree? right-tree))
+          (red? right-tree)
+          (not (empty-tree? (right right-tree)))
+          (red? (right right-tree)))
+     (make-red (value right-tree)
+               (make-black val
+                          left-tree
+                          (left right-tree))
+               (make-black (value (right right-tree))
+                          (left (right right-tree))
+                          (right (right right-tree))))]
+    
+    ;; Default: no restructuring needed
+    [True
+     [color val left-tree right-tree]]))
+
+(defn member? [x tree]
+  (cond
+    [(empty-tree? tree) False]
+    [(< x (value tree)) (member? x (left tree))]
+    [(> x (value tree)) (member? x (right tree))]
+    [True True]))
+
+(defn insert-
