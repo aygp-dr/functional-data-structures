@@ -1,0 +1,81 @@
+#+TITLE: Functional Data Structures
+#+AUTHOR: Functional Data Structures Team
+#+OPTIONS: toc:3 num:t
+
+* Overview
+
+This repository contains implementations of purely functional data structures based on Chris Okasaki's book "Purely Functional Data Structures". The implementations are available in two Lisp dialects:
+
+- *Guile Scheme*: A dialect of Scheme (a Lisp variant) that is part of the GNU project
+- *Hy*: A Lisp dialect embedded in Python
+
+* Data Structures
+
+The following data structures are implemented:
+
+- Persistent Lists
+- Stacks
+- Queues (using the two-list approach)
+- Binomial Heaps
+- Red-Black Trees
+- More to come...
+
+* Getting Started
+
+** Prerequisites
+
+- Guile 3.0+ for the Scheme implementation
+- Python 3.10+ with Hy 1.0+ for the Hy implementation
+- Poetry for Python dependency management
+- Emacs with org-mode for development
+
+** Installation
+
+#+begin_src shell
+# Clone the repository
+git clone https://github.com/aygp-dr/functional-data-structures.git
+cd functional-data-structures
+
+# Setup Python environment with Hy
+poetry install
+#+end_src
+
+** Running the Code
+
+The source code is maintained in an Org-mode file and can be tangled into separate Scheme and Hy files:
+
+#+begin_src shell
+# Tangle files from the org file
+emacs -Q --batch --eval "(require 'org)" --eval "(org-babel-tangle-file \"okasaki-data-structures.org\")"
+
+# Run Scheme implementation
+guile -L . scheme/okasaki.scm
+
+# Run Hy implementation
+poetry run hy hy/okasaki.hy
+#+end_src
+
+* Structure
+
+- =okasaki-data-structures.org= - Main source file in Org-mode
+- =scheme/= - Tangled Scheme source files
+- =hy/= - Tangled Hy source files
+- =tests/= - Test files for both implementations
+
+* Development with Emacs
+
+This project is designed to be developed with Emacs using org-mode for literate programming. The included =.emacs.d/init.el= provides the necessary configuration for:
+
+- Org-mode with syntax highlighting
+- Babel for executing source blocks
+- Tangle support for extracting code
+- Geiser integration for Scheme development (using Guile by default)
+- Hy-mode for Hy development
+
+* Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+* License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

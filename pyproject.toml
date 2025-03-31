@@ -1,0 +1,17 @@
+[project]
+name = "functional-data-structures"
+version = "0.1.0"
+description = "Purely functional data structures implemented in Scheme and Hy"
+authors = [
+    {name = "Functional Data Structures Team"}
+]
+readme = "README.md"
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    "hy (>=1.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
