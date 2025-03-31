@@ -33,7 +33,7 @@ help: ## Show this help message
 	@echo "$(YELLOW)Usage:$(RESET) make [target]"
 	@echo ""
 	@echo "$(YELLOW)Available targets:$(RESET)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-15s$(RESET) %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*## "}; {printf "  $(GREEN)%-15s$(RESET) %s\n", $$1, $$2}'
 
 all: tangle test lint ## Tangle code, run tests, and lint
 
