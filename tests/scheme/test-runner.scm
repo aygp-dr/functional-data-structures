@@ -1,7 +1,10 @@
-;; test-runner.scm - Simple test runner for Scheme code
+;; test-runner.scm - Test runner for Scheme code
 
 (define-module (tests scheme test-runner)
   #:export (main))
+
+;; Import test modules
+(use-modules (tests scheme test-stack))
 
 ;; Simple test utilities
 (define-syntax assert-equal
@@ -25,24 +28,29 @@
 
 ;; Load test modules
 (define (load-tests)
-  (display "Loading tests...\n")
-  ;; We'll actually load and run tests from here as they're developed
-  ;; For now, we'll just have a placeholder test
+  (display "Loading test modules...\n")
   #t)
 
 ;; Run all tests
-(define (run-tests)
-  (display "Running tests...\n")
-  ;; Placeholder for actual tests
+(define (run-all-tests)
+  (display "\n===== Running all tests =====\n")
+  
+  ;; Run basic sanity tests
+  (display "\n----- Basic sanity tests -----\n")
   (assert-equal 1 (+ 0 1))
   (assert-equal '(1 2 3) (list 1 2 3))
-  (display "All tests passed!\n")
+  
+  ;; Run stack tests
+  (display "\n----- Stack tests -----\n")
+  (run-tests)
+  
+  (display "\n===== All tests passed! =====\n")
   #t)
 
 ;; Main function
 (define (main args)
   (load-tests)
-  (run-tests)
+  (run-all-tests)
   (exit 0))
 
 ;; If this file is being executed directly

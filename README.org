@@ -4,10 +4,19 @@
 
 * Overview
 
-This repository contains implementations of purely functional data structures based on Chris Okasaki's book "Purely Functional Data Structures". The implementations are available in two Lisp dialects:
+This repository contains implementations of purely functional data structures based on Chris Okasaki's book "Purely Functional Data Structures" and his PhD thesis. The implementations are available in two Lisp dialects:
 
 - *Guile Scheme*: A dialect of Scheme (a Lisp variant) that is part of the GNU project
 - *Hy*: A Lisp dialect embedded in Python
+
+* References
+
+- Okasaki, C. (1999). /Purely Functional Data Structures/. Cambridge University Press. 
+  - [[https://www.goodreads.com/book/show/594288.Purely_Functional_Data_Structures][Goodreads Link]]
+- Okasaki, C. (1996). /Purely Functional Data Structures/ (PhD thesis). Carnegie Mellon University.
+  - [[https://www.cs.cmu.edu/~rwh/students/okasaki.pdf][PDF Link]]
+
+You can download the PhD thesis paper by running: ~make get-paper~
 
 * Data Structures
 

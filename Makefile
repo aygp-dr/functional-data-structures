@@ -13,10 +13,10 @@ HY_SOURCES := $(wildcard $(HY_DIR)/**/*.hy)
 
 # Commands
 GUILE := guile
-HY := poetry run hy
+HY := hy
 EMACS := emacs -Q --batch
 GUILD := guild
-HY_FORMATTER := poetry run black
+HY_FORMATTER := black
 GUILEC := guild compile
 
 # Color definitions
@@ -36,6 +36,7 @@ help:  ## Show this help message
 	@echo "  $(CYAN)tangle$(RESET)          Tangle source code from org files"
 	@echo "  $(CYAN)compile-scheme$(RESET)  Compile Scheme files"
 	@echo "  $(CYAN)install$(RESET)         Install Python dependencies"
+	@echo "  $(CYAN)shell$(RESET)           Activate Poetry shell"
 	@echo "  $(CYAN)test$(RESET)            Run all tests"
 	@echo "  $(CYAN)test-scheme$(RESET)     Run Scheme tests"
 	@echo "  $(CYAN)test-hy$(RESET)         Run Hy tests"
@@ -44,6 +45,7 @@ help:  ## Show this help message
 	@echo "  $(CYAN)doc$(RESET)             Generate documentation"
 	@echo "  $(CYAN)run-scheme$(RESET)      Run Scheme implementation"
 	@echo "  $(CYAN)run-hy$(RESET)          Run Hy implementation"
+	@echo "  $(CYAN)get-paper$(RESET)       Download Okasaki's thesis paper"
 
 all: tangle test lint  ## Tangle code, run tests, and lint
 
@@ -79,10 +81,14 @@ compile-scheme: tangle  ## Compile Scheme files
 	done
 	@echo "Done compiling Scheme files"
 
-install:  ## Install Python dependencies
+install:  ## Install Python dependencies and activate environment
 	@echo "Installing Python dependencies..."
 	@poetry install --with dev
 	@echo "Done installing dependencies"
+
+shell:  ## Activate Poetry shell
+	@echo "Activating Poetry shell..."
+	@poetry shell
 
 # Test targets
 test: test-scheme test-hy  ## Run all tests
@@ -153,3 +159,9 @@ commit-conventional:  ## Create a conventional commit (usage: make commit-conven
 	@echo "Creating conventional commit..."
 	@git commit -m "$(msg)" --trailer "Signed-off-by: $$(git config user.name) <$$(git config user.email)>"
 	@echo "Commit created"
+
+get-paper:  ## Download Okasaki's thesis paper
+	@echo "Downloading Okasaki's thesis paper..."
+	@mkdir -p references
+	@curl -L https://www.cs.cmu.edu/~rwh/students/okasaki.pdf -o references/okasaki-thesis.pdf
+	@echo "$(GREEN)Paper downloaded to references/okasaki-thesis.pdf$(RESET)"
