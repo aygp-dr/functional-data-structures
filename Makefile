@@ -73,7 +73,7 @@ compile-scheme: tangle ## Compile Scheme files
 
 install: ## Install Python dependencies
 	@echo "$(BLUE)Installing Python dependencies...$(RESET)"
-	@poetry install
+	@poetry install --with dev
 	@echo "$(GREEN)Done installing dependencies$(RESET)"
 
 ## Test targets
@@ -96,7 +96,11 @@ lint: lint-scheme lint-hy ## Run linters for both Scheme and Hy
 
 lint-scheme: ## Lint Scheme code
 	@echo "$(BLUE)Linting Scheme code...$(RESET)"
-	@$(GUILD) lint $(SCHEME_SOURCES) || (echo "$(RED)Scheme linting failed$(RESET)"; exit 1)
+	@if command -v $(GUILD) >/dev/null 2>&1; then \
+		$(GUILD) lint $(SCHEME_SOURCES) || (echo "$(RED)Scheme linting failed$(RESET)"; exit 1); \
+	else \
+		echo "$(YELLOW)Guild lint not available. Skipping Scheme linting.$(RESET)"; \
+	fi
 	@echo "$(GREEN)Scheme linting passed$(RESET)"
 
 lint-hy: ## Lint Hy code
@@ -150,45 +154,43 @@ commit-conventional: ## Create a conventional commit (usage: make commit-convent
 prepare-commit-msg: ## Setup git hooks for conventional commits
 	@echo "$(BLUE)Setting up git commit message template...$(RESET)"
 	@mkdir -p .git/hooks
-	@cat > .git/hooks/prepare-commit-msg << 'EOF'
-#!/bin/sh
-#
-# Git commit message template hook
-# This hook prepares a template for the commit message
-
-# Exit if this is not a new commit or if the message is already specified
-case "$2,$3" in
-  merge,|template,|squash,|commit,*|message,*)
-    exit 0 ;;
-esac
-
-# Template for conventional commits
-cat > "$1" << 'EOT'
-# <type>(<scope>): <subject>
-# |<---- Using a Maximum Of 50 Characters ---->|
-
-# Explain why this change is being made
-# |<---- Try To Limit Each Line to a Maximum Of 72 Characters ---->|
-
-# --- COMMIT END ---
-# Type can be
-#    feat     (new feature)
-#    fix      (bug fix)
-#    refactor (refactoring code)
-#    style    (formatting, missing semi colons, etc; no code change)
-#    docs     (changes to documentation)
-#    test     (adding or refactoring tests; no production code change)
-#    chore    (updating grunt tasks etc; no production code change)
-# --------------------
-# Remember to:
-#    Use the imperative mood in the subject line
-#    Do not end the subject line with a period
-#    Separate subject from body with a blank line
-#    Use the body to explain what and why vs. how
-#    Can use multiple lines with "-" for bullet points in body
-# --------------------
-EOT
-exit 0
-EOF
+	@echo '#!/bin/sh' > .git/hooks/prepare-commit-msg
+	@echo '#' >> .git/hooks/prepare-commit-msg
+	@echo '# Git commit message template hook' >> .git/hooks/prepare-commit-msg
+	@echo '# This hook prepares a template for the commit message' >> .git/hooks/prepare-commit-msg
+	@echo '' >> .git/hooks/prepare-commit-msg
+	@echo '# Exit if this is not a new commit or if the message is already specified' >> .git/hooks/prepare-commit-msg
+	@echo 'case "$$2,$$3" in' >> .git/hooks/prepare-commit-msg
+	@echo '  merge,|template,|squash,|commit,*|message,*)' >> .git/hooks/prepare-commit-msg
+	@echo '    exit 0 ;;' >> .git/hooks/prepare-commit-msg
+	@echo 'esac' >> .git/hooks/prepare-commit-msg
+	@echo '' >> .git/hooks/prepare-commit-msg
+	@echo '# Template for conventional commits' >> .git/hooks/prepare-commit-msg
+	@echo 'cat > "$$1" << '"'EOT'" >> .git/hooks/prepare-commit-msg
+	@echo '# <type>(<scope>): <subject>' >> .git/hooks/prepare-commit-msg
+	@echo '# |<---- Using a Maximum Of 50 Characters ---->|' >> .git/hooks/prepare-commit-msg
+	@echo '' >> .git/hooks/prepare-commit-msg
+	@echo '# Explain why this change is being made' >> .git/hooks/prepare-commit-msg
+	@echo '# |<---- Try To Limit Each Line to a Maximum Of 72 Characters ---->|' >> .git/hooks/prepare-commit-msg
+	@echo '' >> .git/hooks/prepare-commit-msg
+	@echo '# --- COMMIT END ---' >> .git/hooks/prepare-commit-msg
+	@echo '# Type can be' >> .git/hooks/prepare-commit-msg
+	@echo '#    feat     (new feature)' >> .git/hooks/prepare-commit-msg
+	@echo '#    fix      (bug fix)' >> .git/hooks/prepare-commit-msg
+	@echo '#    refactor (refactoring code)' >> .git/hooks/prepare-commit-msg
+	@echo '#    style    (formatting, missing semi colons, etc; no code change)' >> .git/hooks/prepare-commit-msg
+	@echo '#    docs     (changes to documentation)' >> .git/hooks/prepare-commit-msg
+	@echo '#    test     (adding or refactoring tests; no production code change)' >> .git/hooks/prepare-commit-msg
+	@echo '#    chore    (updating grunt tasks etc; no production code change)' >> .git/hooks/prepare-commit-msg
+	@echo '# --------------------' >> .git/hooks/prepare-commit-msg
+	@echo '# Remember to:' >> .git/hooks/prepare-commit-msg
+	@echo '#    Use the imperative mood in the subject line' >> .git/hooks/prepare-commit-msg
+	@echo '#    Do not end the subject line with a period' >> .git/hooks/prepare-commit-msg
+	@echo '#    Separate subject from body with a blank line' >> .git/hooks/prepare-commit-msg
+	@echo '#    Use the body to explain what and why vs. how' >> .git/hooks/prepare-commit-msg
+	@echo '#    Can use multiple lines with "-" for bullet points in body' >> .git/hooks/prepare-commit-msg
+	@echo '# --------------------' >> .git/hooks/prepare-commit-msg
+	@echo 'EOT' >> .git/hooks/prepare-commit-msg
+	@echo 'exit 0' >> .git/hooks/prepare-commit-msg
 	@chmod +x .git/hooks/prepare-commit-msg
 	@echo "$(GREEN)Git commit message template installed$(RESET)"
