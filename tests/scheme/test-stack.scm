@@ -32,10 +32,10 @@
             
             ;; Test error handling for empty stack
             (let ((error? #f))
-              (with-exception-handler
-                (lambda (exn) (set! error? #t))
-                (lambda () (top stack5)))
-              (assert error? "Top on empty stack should throw an error"))))))
+              (catch #t
+                (lambda () (top stack5))
+                (lambda (key . args) (set! error? #t)))
+              (assert error? "Top on empty stack should throw an error")))))))
   
   (display "All stack tests passed!\n"))
 

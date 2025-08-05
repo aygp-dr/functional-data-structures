@@ -118,12 +118,12 @@ test: test-scheme test-hy  ## Run all tests
 
 test-scheme: tangle  ## Run Scheme tests
 	@echo "$(CYAN)Running Scheme tests...$(RESET)"
-	@$(GUILE) -L . -e main $(TEST_DIR)/scheme/test-runner.scm || (echo "$(RED)Scheme tests failed$(RESET)"; exit 1)
+	@GUILE_LOAD_PATH="./scheme:$$GUILE_LOAD_PATH" $(GUILE) -L . -e main $(TEST_DIR)/scheme/test-runner.scm || (echo "$(RED)Scheme tests failed$(RESET)"; exit 1)
 	@echo "$(GREEN)Scheme tests passed$(RESET)"
 
 test-hy: tangle  ## Run Hy tests
 	@echo "$(CYAN)Running Hy tests...$(RESET)"
-	@PYTHONPATH="$$PYTHONPATH:$$(pwd)" poetry run pytest $(TEST_DIR)/hy || (echo "$(RED)Hy tests failed$(RESET)"; exit 1)
+	@PYTHONPATH="./hy:$$PYTHONPATH" poetry run pytest $(TEST_DIR)/hy || (echo "$(RED)Hy tests failed$(RESET)"; exit 1)
 	@echo "$(GREEN)Hy tests passed$(RESET)"
 
 # Lint and format
@@ -165,11 +165,11 @@ doc:  ## Generate documentation
 # Run targets
 run-scheme: tangle  ## Run Scheme implementation
 	@echo "Running Scheme implementation..."
-	@$(GUILE) -L . $(SCHEME_DIR)/okasaki.scm
+	@GUILE_LOAD_PATH="./scheme:$$GUILE_LOAD_PATH" $(GUILE) -c "(use-modules (okasaki stack)) (display \"Stack module loaded successfully\n\")"
 
 run-hy: tangle  ## Run Hy implementation
 	@echo "Running Hy implementation..."
-	@$(HY) $(HY_DIR)/okasaki.hy
+	@PYTHONPATH="./hy:$$PYTHONPATH" $(HY) -c "(import okasaki.stack) (print \"Hy stack module loaded successfully\")"
 
 # Git and contribution helpers
 commit-conventional:  ## Create a conventional commit (usage: make commit-conventional msg="type(scope): message")

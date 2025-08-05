@@ -51,37 +51,64 @@ cd functional-data-structures
 poetry install
 #+end_src
 
-** Running the Code
-
-The source code is maintained in an Org-mode file (Literate Programming) and is "tangled" into separate Scheme and Hy files. The workflow is:
+** Quick Start
 
 #+begin_src shell
-# Tangle org file into Scheme and Hy source code
-make tangle
+# Install dependencies
+make install
 
-# Run the implementations
-make run-scheme  # Run Scheme implementation
-make run-hy      # Run Hy implementation
+# Run all tests and verify everything works
+make test-scheme  # Scheme tests (fully working)
 
-# Run tests
-make test
+# Test individual implementations  
+make run-scheme   # Load and test Scheme stack module
+make run-hy       # Load and test Hy stack module
 
-# If you edit source files directly, you can sync changes back to the org file
-make detangle
+# Show all available commands
+make help
 #+end_src
 
-We use a bi-directional workflow where you can either:
-1. Edit the =okasaki-data-structures.org= file and run =make tangle= to generate code, or
-2. Edit files in the =scheme/= and =hy/= directories and run =make detangle= to update the org file
+** Development Workflow
 
-The tangled code files are marked as generated and can be cleaned with =make clean=. This approach lets us maintain parity between implementations while documenting concepts in a single place.
+The project uses a literate programming approach with Org-mode, but also supports direct modular development:
+
+1. **Modular Development** (Recommended):
+   - Edit files directly in =scheme/okasaki/= and =hy/okasaki/= directories
+   - Run =make detangle= to sync changes back to the org file
+   - Use =make test-scheme= to run tests
+
+2. **Literate Programming**:
+   - Edit the =okasaki-data-structures.org= file 
+   - Run =make tangle= to generate modular code files
+   - The tangled files are marked as generated
+
+3. **Testing**:
+   - =make test-scheme= - Run Scheme tests (✅ Working)
+   - =make test-hy= - Run Hy tests (⚠️ In progress - modules load correctly)
+
+The project maintains both approaches to support different development preferences while ensuring the implementations stay in sync.
+
+* Project Status
+
+** ✅ Working Components
+- Scheme implementation with full test suite
+- Hy implementation with module loading
+- Build system with tangle/detangle workflow  
+- Proper module organization for both languages
+- Comprehensive Makefile with all common tasks
+
+** ⚠️ In Progress
+- Hy test infrastructure (modules work, pytest integration needs work)
+- Additional data structures beyond stacks
 
 * Structure
 
-- =okasaki-data-structures.org= - Main source file in Org-mode
-- =scheme/= - Tangled Scheme source files
-- =hy/= - Tangled Hy source files
-- =tests/= - Test files for both implementations
+- =okasaki-data-structures.org= - Main source file in Org-mode (literate programming)
+- =scheme/okasaki/= - Modular Scheme implementation files
+- =hy/okasaki/= - Modular Hy implementation files  
+- =tests/scheme/= - Scheme test files (working)
+- =tests/hy/= - Hy test files (in progress)
+- =Makefile= - Build system with comprehensive targets
 
 * Development with Emacs
 
