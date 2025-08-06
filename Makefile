@@ -1,4 +1,4 @@
-.PHONY: help clean tangle scheme hy test lint format doc run-scheme run-hy install
+.PHONY: help clean tangle scheme hy test lint format doc run-scheme run-hy install tmux-start tmux-attach tmux-stop tmux-status emacs-repl
 
 # Default target is help
 .DEFAULT_GOAL := help
@@ -10,6 +10,12 @@ TEST_DIR := tests
 ORG_FILES := $(wildcard *.org)
 SCHEME_SOURCES := $(wildcard $(SCHEME_DIR)/**/*.scm)
 HY_SOURCES := $(wildcard $(HY_DIR)/**/*.hy)
+
+# Project configuration  
+PROJECT_NAME := functional-data-structures
+PROJECT_ROOT := $(shell pwd)
+EMACS_CONFIG := $(PROJECT_ROOT)/$(PROJECT_NAME).el
+TMUX_SESSION := $(PROJECT_NAME)
 
 # Commands
 GUILE := guile
@@ -47,6 +53,13 @@ help:  ## Show this help message
 	@echo "  $(CYAN)run-scheme$(RESET)      Run Scheme implementation"
 	@echo "  $(CYAN)run-hy$(RESET)          Run Hy implementation"
 	@echo "  $(CYAN)get-paper$(RESET)       Download Okasaki's thesis paper"
+	@echo ""
+	@echo "$(YELLOW)Development environment:$(RESET)"
+	@echo "  $(CYAN)tmux-start$(RESET)      Start tmux session with Emacs"
+	@echo "  $(CYAN)tmux-attach$(RESET)     Attach to existing tmux session"
+	@echo "  $(CYAN)tmux-stop$(RESET)       Stop tmux session"
+	@echo "  $(CYAN)tmux-status$(RESET)     Show tmux session status"
+	@echo "  $(CYAN)emacs-repl$(RESET)      Start Emacs with Geiser REPL"
 
 all: tangle test lint  ## Tangle code, run tests, and lint
 
@@ -188,3 +201,40 @@ get-paper:  ## Download Okasaki's thesis paper
 	@mkdir -p references
 	@curl -L https://www.cs.cmu.edu/~rwh/students/okasaki.pdf -o references/okasaki-thesis.pdf
 	@echo "$(GREEN)Paper downloaded to references/okasaki-thesis.pdf$(RESET)"
+
+# Tmux and Emacs development environment
+tmux-start:  ## Start tmux session with project-specific Emacs configuration
+	@echo "$(CYAN)Starting tmux session '$(TMUX_SESSION)' with Emacs...$(RESET)"
+	@if tmux has-session -t $(TMUX_SESSION) 2>/dev/null; then \
+		echo "Session '$(TMUX_SESSION)' already exists. Attaching..."; \
+		tmux attach-session -t $(TMUX_SESSION); \
+	else \
+		echo "Creating new session '$(TMUX_SESSION)'..."; \
+		tmux new-session -d -s $(TMUX_SESSION) "emacs -nw -l $(EMACS_CONFIG)"; \
+		echo "Session created. Getting TTY..."; \
+		tmux list-panes -t $(TMUX_SESSION) -F "Pane TTY: #{pane_tty}"; \
+		echo "$(GREEN)Session '$(TMUX_SESSION)' started$(RESET)"; \
+		echo "Attach with: tmux attach-session -t $(TMUX_SESSION)"; \
+	fi
+
+tmux-attach:  ## Attach to existing tmux session
+	@echo "$(CYAN)Attaching to tmux session '$(TMUX_SESSION)'...$(RESET)"
+	@tmux attach-session -t $(TMUX_SESSION) || echo "$(YELLOW)No session found. Run 'make tmux-start' first.$(RESET)"
+
+tmux-stop:  ## Stop tmux session
+	@echo "$(CYAN)Stopping tmux session '$(TMUX_SESSION)'...$(RESET)"
+	@tmux kill-session -t $(TMUX_SESSION) 2>/dev/null || echo "$(YELLOW)Session '$(TMUX_SESSION)' not found$(RESET)"
+	@echo "$(GREEN)Session stopped$(RESET)"
+
+tmux-status:  ## Show tmux session status
+	@echo "$(CYAN)Tmux session status:$(RESET)"
+	@if tmux has-session -t $(TMUX_SESSION) 2>/dev/null; then \
+		echo "$(GREEN)Session '$(TMUX_SESSION)' is running$(RESET)"; \
+		tmux list-panes -t $(TMUX_SESSION) -F "  Pane: #{pane_index} TTY: #{pane_tty} Size: #{pane_width}x#{pane_height}"; \
+	else \
+		echo "$(YELLOW)Session '$(TMUX_SESSION)' is not running$(RESET)"; \
+	fi
+
+emacs-repl:  ## Start Emacs with Geiser REPL for Scheme development
+	@echo "$(CYAN)Starting Emacs with Geiser REPL...$(RESET)"
+	@emacs -l $(EMACS_CONFIG) --eval "(fds-open-repl)"
